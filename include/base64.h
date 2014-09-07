@@ -38,7 +38,7 @@ int base64_encode_blockend(char* code_out, base64_encodestate* state_in);
 char *base64_encode(const char *str);
 char *base64_decode(const char *str);
 
-char *base64_encode_r(const char *in, char *out);
-char *base64_decode_r(const char *in, char *out);
+int base64_encode_r(const char *in, char *out);
+int base64_decode_r(const char *in, char *out);
 
 #endif /* BASE64_H_ */

@@ -33,7 +33,7 @@ command_t *parse_file(const char *filename);
 void free_command1(command_t *command);
 void free_command(command_t *command);
 
-void execute_command1(command_t *command);
-void execute_command(command_t *command);
+/* For debugging purposed */
+void print_command(command_t *cmd, int indent);
 
 #endif /* PARSER_H_ */

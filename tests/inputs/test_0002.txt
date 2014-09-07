@@ -1,0 +1,5 @@
+CONNECT en.wikipedia.org 80
+# GET /wiki/HTTP_302 HTTP/1.0\r\nHost: en.wikipedia.org\r\n\r\n
+SEND_B64 R0VUIC93aWtpL0hUVFBfMzAyIEhUVFAvMS4wDQpIb3N0OiBlbi53aWtpcGVkaWEub3JnDQoNCgo=
+RECV 0
+DISCONNECT

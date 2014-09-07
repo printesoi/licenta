@@ -92,6 +92,7 @@ int base64_decode_block(const char* code_in, const int length_in, char* plaintex
 static int base64_decoded_size(int enc_len)
 {
 	div_t d = div(enc_len, 4);
+
 	return 3 * d.quot + !!d.rem + 1;
 }
 
@@ -111,4 +112,20 @@ char *base64_decode(const char *str)
 
 	out[result] = 0;
 	return out;
+}
+
+int base64_decode_r(const char *str, char *out)
+{
+	base64_decodestate dec_state;
+	int input_size, result;
+
+	if (!out)
+		return -1;
+
+	input_size = strlen(str);
+	base64_init_decodestate(&dec_state);
+	result = base64_decode_block(str, input_size, out, &dec_state);
+
+	out[result] = 0;
+	return result;
 }

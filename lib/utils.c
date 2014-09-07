@@ -5,7 +5,8 @@
 
 #include "utils.h"
 
-void mlog(const char *file, const char *func, unsigned long line, const char *fmt, ...)
+void mlog(const char *file, const char *func, unsigned long line,
+	  const char *fmt, ...)
 {
 	va_list args;
 	struct timeval tv;
@@ -13,8 +14,8 @@ void mlog(const char *file, const char *func, unsigned long line, const char *fm
 
 	if (gettimeofday(&tv, NULL) == 0) {
 		localtime_r(&tv.tv_sec, &tm);
-		fprintf(stdout, "[%02d:%02d:%02d.%06ld] ", tm.tm_hour, tm.tm_min,
-			tm.tm_sec, tv.tv_usec);
+		fprintf(stdout, "[%02d:%02d:%02d.%06ld] ", tm.tm_hour,
+			tm.tm_min, tm.tm_sec, tv.tv_usec);
 	}
 	fprintf(stdout, "%s:%lu:%s ", file, line, func);
 

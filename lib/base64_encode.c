@@ -112,9 +112,9 @@ int base64_encode_blockend(char* code_out, base64_encodestate* state_in)
 static int base64_encoded_size(int unenc_len)
 {
 	div_t d = div(unenc_len, 3);
+
 	if (d.rem == 0)
 		return unenc_len + d.quot + 1;
-
 	return (d.quot + 1) * 4 + 1;
 }
 

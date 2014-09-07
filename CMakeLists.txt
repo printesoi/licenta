@@ -12,6 +12,7 @@ SET(server_SRCS
 
 SET(client_SRCS
     client/main.c
+    client/client.c
     lib/utils.c
     lib/parser.c
     lib/base64_encode.c

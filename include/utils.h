@@ -11,9 +11,14 @@ void mlog(const char *file, const char *func, unsigned long line, const char *fm
 #define LOG(fmt, ...)	LOGG("[INFO] " fmt, ##__VA_ARGS__)
 #define WARN(fmt, ...)	LOGG("[WARN] " fmt, ##__VA_ARGS__)
 #define ERR(ex, fmt, ...)	do { \
-	LOGG("[ERROR] " fmt, ##__VA_ARGS__); \
-	exit((ex)); \
-} while (0)
+		LOGG("[ERROR] " fmt, ##__VA_ARGS__); \
+		exit((ex)); \
+	} while (0)
+#define ASSERT(exp)	do { \
+		if (!exp) { \
+			ERR(-1, "ASSERT CONDITION " #exp " FAILED"); \
+		} \
+	} while (0)
 
 
 #endif /* UTILS_H_ */
