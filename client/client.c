@@ -19,6 +19,12 @@ void init_client_state(client_state_t *state)
 	state->port = 0;
 }
 
+void cleanup_client_state(client_state_t *state)
+{
+	free(state->host);
+	state->port = 0;
+}
+
 int tcp_connect(const char *host, unsigned short port)
 {
 	int sockfd = -1, rc, connected = 0;
@@ -82,8 +88,10 @@ TC_ERROR0:
 void connect_client(client_state_t *state, const char *host,
 		    unsigned short port)
 {
-	if (state->sockfd >= 0)
+	if (state->sockfd >= 0) {
 		disconnect_client(state);
+		cleanup_client_state(state);
+	}
 
 	state->sockfd = tcp_connect(host, port);
 	if (state->sockfd < 0)
@@ -253,6 +261,23 @@ void execute_command(client_state_t *state, command_t *cmd)
 	case CT_RECV:
 		recv_string(state, *(unsigned long *)cmd->arg0,
 			    *(unsigned long *)cmd->arg1);
+		break;
+
+	case CT_LOOP:
+		if (cmd->child) {
+			unsigned long n_repeat, n;
+
+			n_repeat = *(unsigned long *)cmd->arg0;
+			n = n_repeat;
+
+			while (1) {
+				if (n_repeat && !n)
+					break;
+
+				execute_command(state, cmd->child);
+				n--;
+			}
+		}
 		break;
 
 	default:

@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 	if (cmd) {
 		init_client_state(&state);
 		execute_command(&state, cmd);
+		cleanup_client_state(&state);
 	}
 
 	free_command(cmd);

@@ -8,6 +8,8 @@ typedef struct client_state {
 } client_state_t;
 
 void init_client_state(client_state_t *state);
+void cleanup_client_state(client_state_t *state);
+
 void connect_client(client_state_t *state, const char *host,
 		    unsigned short port);
 void disconnect_client(client_state_t *state);
