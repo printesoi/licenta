@@ -19,6 +19,10 @@ command_t *parse_line(char *line, unsigned line_number)
 	if (!word)
 		return NULL;
 
+	/* Ignore comments */
+	if (word[0] == '#')
+		return NULL;
+
 	cmd = calloc(1, sizeof(*cmd));
 	if (!cmd)
 		ERR(EXIT_FAILURE, "ASSERT: calloc");
@@ -167,6 +171,10 @@ command_t *parse_line(char *line, unsigned line_number)
 	} else if (!strcasecmp(word, "ENDLOOP")) {
 		cmd->command_type = CT_ENDLOOP;
 		/* No arguments */
+	} else {
+		WARN("Ignoring unrecognized command %s", word);
+		free(cmd);
+		return NULL;
 	}
 
 	cmd->command = strdup(word);
@@ -186,12 +194,9 @@ command_t *parse_file(const char *filename)
 	while (fgets(line, sizeof(line), file)) {
 		command_t *cmd;
 		line_number++;
-		/* Ignore the comments */
-		if (line[0] == '#')
-			continue;
 		cmd = parse_line(line, line_number);
 		if (!cmd)
-			continue; /* Maybe an empty line? */
+			continue; /* Empty line or comment */
 
 		if (!root)
 			root = cmd;
