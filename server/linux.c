@@ -7,25 +7,18 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <signal.h>
+#include <sys/signalfd.h>
 
 #include "utils.h"
 #include "os.h"
-
-struct epoll_struct {
-	int fd;
-	enum fd_type type;
-	uint32_t events;
-
-	struct buffer *recv_buff;
-	struct buffer *send_buff;
-
-	void *data;
-};
 
 
 /* Counting total time spent in epoll_* and the number of calls */
 static struct timespec total_epoll_wait, total_epoll_ctl;
 static size_t n_epoll_wait, n_epoll_ctl;
+
+#define PRINT_TS(tv) LOG("TS %ld.%09ld", (tv).tv_sec, (tv).tv_nsec);
 
 static int epfd;
 
@@ -43,9 +36,9 @@ int timeit(struct timespec *ts)
 	return rc;
 }
 
-void *monitor_fd(int fd, enum fd_type type, uint32_t events)
+struct poll_struct *monitor_fd(int fd, enum fd_type type, uint32_t events)
 {
-	struct epoll_struct *eps;
+	struct poll_struct *eps;
 	struct epoll_event ev;
 	uint32_t ep_events = 0;
 	struct timespec start, end, diff;
@@ -94,7 +87,7 @@ void *monitor_fd(int fd, enum fd_type type, uint32_t events)
 	diff = timespec_diff(start, end);
 	diff = timespec_diff(g_syscall_ovhead, diff);
 	/* Should be always true! */
-	if (diff.tv_sec > 0)
+	if (diff.tv_sec >= 0)
 		total_epoll_ctl = timespec_add(total_epoll_ctl, diff);
 	n_epoll_ctl++;
 
@@ -103,7 +96,7 @@ void *monitor_fd(int fd, enum fd_type type, uint32_t events)
 	return eps;
 }
 
-int change_events(struct epoll_struct *eps, uint32_t events)
+int change_events(struct poll_struct *eps, uint32_t events)
 {
 	struct epoll_event ev;
 	struct timespec start, end, diff;
@@ -128,7 +121,7 @@ int change_events(struct epoll_struct *eps, uint32_t events)
 	diff = timespec_diff(start, end);
 	diff = timespec_diff(g_syscall_ovhead, diff);
 	/* Should be always true! */
-	if (diff.tv_sec > 0)
+	if (diff.tv_sec >= 0)
 		total_epoll_ctl = timespec_add(total_epoll_ctl, diff);
 	n_epoll_ctl++;
 
@@ -138,7 +131,7 @@ int change_events(struct epoll_struct *eps, uint32_t events)
 	return 0;
 }
 
-int remove_fd(struct epoll_struct *eps)
+int remove_fd(struct poll_struct *eps)
 {
 	struct timespec start, end, diff;
 	int rc;
@@ -157,7 +150,7 @@ int remove_fd(struct epoll_struct *eps)
 	diff = timespec_diff(start, end);
 	diff = timespec_diff(g_syscall_ovhead, diff);
 	/* Should be always true! */
-	if (diff.tv_sec > 0)
+	if (diff.tv_sec >= 0)
 		total_epoll_ctl = timespec_add(total_epoll_ctl, diff);
 	n_epoll_ctl++;
 
@@ -175,55 +168,7 @@ int remove_fd(struct epoll_struct *eps)
 	return 0;
 }
 
-int recv_string(struct epoll_struct *eps)
-{
-	size_t space_avail, packet_len;
-	char *next, *buffer_start;
-	int ret;
-
-	space_avail = sizeof(eps->recv_buff->bdata) - eps->recv_buff->bsize;
-	do {
-		buffer_start = eps->recv_buff->bdata + eps->recv_buff->bsize;
-		ret = recv(eps->fd, buffer_start, space_avail, 0);
-		if (ret < 0) {
-			if (errno != EAGAIN && errno != EWOULDBLOCK) {
-				WARN_SYS("recv fd %d", eps->fd);
-				return -1;
-			}
-		} else if (ret == 0) {
-			LOG("Peer %d closed connection", eps->fd);
-			return -1;
-		} else {
-			eps->recv_buff->bsize += ret;
-			space_avail -= ret;
-
-			next = next_packet(eps->recv_buff);
-			while (next && *eps->recv_buff->bdata) {
-				/* TODO */
-				LOG("Received (fd %d): %s", eps->fd,
-				    eps->recv_buff->bdata);
-
-				packet_len = next - eps->recv_buff->bdata;
-				eps->recv_buff->bsize -= packet_len;
-				space_avail += packet_len;
-				memmove(eps->recv_buff->bdata,
-					next, eps->recv_buff->bsize);
-
-				next = next_packet(eps->recv_buff);
-			}
-
-			if (!space_avail) {
-				WARN("Drop connection fd %d, buffer full",
-				     eps->fd);
-				return -1;
-			}
-		}
-	} while (ret > 0);
-
-	return 0;
-}
-
-int treat_events(struct epoll_struct *eps, uint32_t events)
+int treat_events(struct poll_struct *eps, uint32_t events)
 {
 	int ret;
 
@@ -234,7 +179,7 @@ int treat_events(struct epoll_struct *eps, uint32_t events)
 				ERR_SYS(-1, "calloc");
 		}
 
-		ret = recv_string(eps);
+		ret = recv_string(eps, eps->fd, eps->recv_buff);
 		if (ret < 0)
 			return ret;
 	}
@@ -242,6 +187,7 @@ int treat_events(struct epoll_struct *eps, uint32_t events)
 	if (events & EPOLLOUT) {
 		if (eps->send_buff && eps->send_buff->bsize) {
 			do {
+				/* TODO use send_string */
 				ret = send(eps->fd, eps->send_buff->bdata,
 					   eps->send_buff->bsize, 0);
 				if (ret < 0) {
@@ -269,7 +215,7 @@ void server_loop(void)
 {
 	struct epoll_event events[N_EVENTS];
 	struct timespec start, end, diff;
-	struct epoll_struct *eps;
+	struct poll_struct *eps;
 	int i, ret;
 
 	while (1) {
@@ -282,9 +228,7 @@ void server_loop(void)
 			ERR_SYS(-1, "epoll_wait");
 		diff = timespec_diff(start, end);
 		diff = timespec_diff(g_syscall_ovhead, diff);
-		/* Should be always true! */
-		if (diff.tv_sec > 0)
-			total_epoll_wait= timespec_add(total_epoll_wait, diff);
+		total_epoll_wait= timespec_add(total_epoll_wait, diff);
 		n_epoll_wait++;
 
 		for (i = 0; i < ret; ++i) {
@@ -307,11 +251,67 @@ void server_loop(void)
 				}
 				break;
 
+			case TYPE_SIGNAL:
+				treat_signal(eps);
+				break;
+
 			default:
 				break;
 			}
 		}
 
 		usleep(1);
+	}
+}
+
+void print_poll_stats(void)
+{
+	fpe("Total time in epoll_ctl: %ld.%09ld", total_epoll_ctl.tv_sec,
+	    total_epoll_ctl.tv_nsec);
+	fpe("Total number of calls to epoll_ctl: %zu", n_epoll_ctl);
+	fpe("Average time for epoll_ctl call: %.9lf",
+	    timespec_to_double(total_epoll_ctl) / n_epoll_ctl);
+
+	fpe("Total time in epoll_wait: %ld.%09ld", total_epoll_wait.tv_sec,
+	    total_epoll_wait.tv_nsec);
+	fpe("Total number of calls to epoll_wait: %zu", n_epoll_wait);
+	fpe("Average time for epoll_wait call: %.9lf",
+	    timespec_to_double(total_epoll_wait) / n_epoll_ctl);
+}
+
+void init_signals(void)
+{
+	int sigfd;
+	sigset_t mask;
+
+	if (SIG_ERR == signal(SIGPIPE, SIG_IGN))
+		ERR(-1, "signal");
+
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGQUIT);
+	sigaddset(&mask, SIGTERM);
+	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0)
+		ERR(-1, "sigprocmask");
+
+	sigfd = signalfd(-1, &mask, 0);
+	if (sigfd < 0)
+		ERR(-1, "signalfd");
+
+	monitor_fd(sigfd, TYPE_SIGNAL, EV_IN);
+}
+
+void treat_signal(struct poll_struct *ps)
+{
+	struct signalfd_siginfo siginfo;
+	ssize_t sz;
+
+	sz = read(ps->fd, &siginfo, sizeof(siginfo));
+	if (sz != sizeof(siginfo))
+		ERR(-1, "Unknown signal caught. Returning..");
+	else
+	{
+		char *signame = strsignal(siginfo.ssi_signo);
+		ERR(0, "Caught signal %d: %s. Returning..", siginfo.ssi_signo, signame ? signame : "UNKNOWN");
 	}
 }

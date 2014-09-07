@@ -1,6 +1,6 @@
 CONNECT localhost 9000
 LOOP 5
-    SEND "test"
-    SEND_B64 AA==
-    USLEEP 10000
+    SEND_B64 eyJ0eXBlIjoxfQA=
+    RECV 100 1
+    USLEEP 1000
 ENDLOOP

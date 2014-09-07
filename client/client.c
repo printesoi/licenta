@@ -195,9 +195,10 @@ void recv_string(client_state_t *state, unsigned long size, unsigned long timeou
 
 		if (rc > 0) {
 			buffer[rc] = 0;
-			LOG("RECEIVED: %s", buffer);
+			LOG("RECEIVED (%d bytes): %s", rc, buffer);
 		}
 	} else {
+		/* Read until the server closes the socket */
 		buffer = malloc(BUFSIZ + 1);
 		if (!buffer)
 			ERR(EXIT_FAILURE, "malloc");
@@ -212,7 +213,7 @@ void recv_string(client_state_t *state, unsigned long size, unsigned long timeou
 				break;
 
 			buffer[rc] = 0;
-			LOG("RECEIVED: %s", buffer);
+			LOG("RECEIVED (%d bytes): %s", rc, buffer);
 		}
 	}
 

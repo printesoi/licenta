@@ -7,6 +7,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <jansson.h>
 
 #define LOGG(fmt, ...)		\
 	mlog(__FILENAME__, __func__, __LINE__, fmt "\n", ##__VA_ARGS__)
@@ -29,6 +30,7 @@
 			ERR(-1, "ASSERT CONDITION " #exp " FAILED"); \
 		} \
 	} while (0)
+#define fpe(fmt, ...)	fprintf(stderr, fmt "\n", ##__VA_ARGS__)
 
 
 void mlog(const char *file, const char *func, unsigned long line,
@@ -41,5 +43,8 @@ int timeit_tsc(struct timespec *ts);
 
 double timespec_to_double(struct timespec ts);
 struct timespec double_to_timespec(double ts);
+
+int json_int_get(json_t *obj, const char *key);
+const char *json_string_get(json_t *obj, const char *key);
 
 #endif /* UTILS_H_ */

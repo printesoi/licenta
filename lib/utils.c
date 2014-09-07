@@ -77,3 +77,13 @@ struct timespec double_to_timespec(double ts)
 
 	return ret;
 }
+
+int json_int_get(json_t *obj, const char *key)
+{
+	return (int)json_integer_value(json_object_get(obj, key));
+}
+
+const char *json_string_get(json_t *obj, const char *key)
+{
+	return json_string_value(json_object_get(obj, key));
+}
