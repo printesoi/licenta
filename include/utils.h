@@ -12,6 +12,9 @@
 	mlog(__FILENAME__, __func__, __LINE__, fmt "\n", ##__VA_ARGS__)
 #define LOG(fmt, ...)	LOGG("[INFO] " fmt, ##__VA_ARGS__)
 #define WARN(fmt, ...)	LOGG("[WARN] " fmt, ##__VA_ARGS__)
+#define WARN_SYS(fmt, ...)	\
+	LOGG("[WARN] " fmt ": (errno %d) %s", ##__VA_ARGS__, errno, \
+	     strerror(errno))
 #define ERR(ex, fmt, ...)	do { \
 		LOGG("[ERROR] " fmt, ##__VA_ARGS__); \
 		exit((ex)); \

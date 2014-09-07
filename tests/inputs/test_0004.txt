@@ -1,0 +1,6 @@
+CONNECT localhost 9000
+LOOP 5
+    SEND "test"
+    SEND_B64 AA==
+    USLEEP 10000
+ENDLOOP
