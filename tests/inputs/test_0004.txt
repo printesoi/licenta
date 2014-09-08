@@ -1,4 +1,4 @@
-LOOP 100
+LOOP 1000
     CONNECT localhost 9000
 
     # insert key
