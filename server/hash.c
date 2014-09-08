@@ -22,20 +22,31 @@ void h_destroy_hash(void)
 	kh_destroy(hhh, k_global_hash);
 }
 
-int h_insert(char *key, json_t *val)
+int h_insert(const char *key, json_t *val)
 {
 	khint_t k;
+	char *nkey;
 	int ret;
 
-	k = kh_put(hhh, k_global_hash, key, &ret);
-	if (ret < 0)
+	k = kh_get(hhh, k_global_hash, key);
+	if (k != kh_end(k_global_hash)) {
+		/* Key already in hash table, free the memory */
 		return 0;
+	}
 
+	nkey = strdup(key);
+	k = kh_put(hhh, k_global_hash, nkey, &ret);
+	if (ret < 0) {
+		free(nkey);
+		return 0;
+	}
+
+	json_incref(val);
 	kh_val(k_global_hash, k) = val;
 	return 1;
 }
 
-int h_delete(char *key, json_t **val)
+int h_delete(const char *key, json_t **val)
 {
 	khint_t k;
 
@@ -45,13 +56,14 @@ int h_delete(char *key, json_t **val)
 		return 0;
 	}
 
+	free((void *)kh_key(k_global_hash, k));
 	*val = kh_val(k_global_hash, k);
 	kh_del(hhh, k_global_hash, k);
 
 	return 1;
 }
 
-int h_find(char *key, json_t **val)
+int h_find(const char *key, json_t **val)
 {
 	khint_t k;
 

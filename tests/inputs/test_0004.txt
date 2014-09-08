@@ -1,6 +1,20 @@
-CONNECT localhost 9000
-LOOP 5
-    SEND_B64 eyJ0eXBlIjoxfQA=
+LOOP 100
+    CONNECT localhost 9000
+
+    # insert key
+    SEND_B64 eyJ0eXBlIjoxLCJrZXkiOiJmb28iLCJ2YWx1ZSI6ImJhciJ9AA=
     RECV 100 1
-    USLEEP 1000
+    USLEEP_RND 100000
+
+    # find key
+    SEND_B64 eyJ0eXBlIjoyLCJrZXkiOiJmb28ifQA=
+    RECV 100 1
+    USLEEP_RND 100000
+
+    # delete key
+    SEND_B64 eyJ0eXBlIjozLCJrZXkiOiJmb28ifQA=
+    RECV 100 1
+    USLEEP_RND 100000
+
+    DISCONNECT
 ENDLOOP

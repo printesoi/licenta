@@ -13,6 +13,7 @@ enum command_type {
 	CT_ENDLOOP,
 	CT_SLEEP,
 	CT_USLEEP,
+	CT_USLEEP_RND,
 };
 
 /* Tree to store commands */

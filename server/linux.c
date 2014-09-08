@@ -276,7 +276,7 @@ void print_poll_stats(void)
 	    total_epoll_wait.tv_nsec);
 	fpe("Total number of calls to epoll_wait: %zu", n_epoll_wait);
 	fpe("Average time for epoll_wait call: %.9lf",
-	    timespec_to_double(total_epoll_wait) / n_epoll_ctl);
+	    timespec_to_double(total_epoll_wait) / n_epoll_wait);
 }
 
 void init_signals(void)

@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <netinet/in.h>
 #include <signal.h>
 
 #include "utils.h"

@@ -1,11 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <fcntl.h>
-#include <arpa/inet.h>
 #include <jansson.h>
 
 #include "utils.h"
@@ -126,9 +121,12 @@ char *next_packet(struct buffer *buffer)
 
 int do_client_action(struct poll_struct *ps, char *data)
 {
-	json_t *msg;
+	json_t *msg, *response;
 	json_error_t error;
-	int type;
+	int type, status;
+	const char *key;
+	char *text;
+	json_t *value;
 
 	msg = json_loads(data, 0, &error);
 	if (!msg) {
@@ -138,20 +136,64 @@ int do_client_action(struct poll_struct *ps, char *data)
 	}
 
 	type = json_int_get(msg, "type");
+	response = json_object();
+	json_object_set_new(response, "type", json_pack("i", type));
+
 	switch (type) {
-	case 1:
+	case 1: /* Insert */
+		key = json_string_get(msg, "key");
+		value = json_object_get(msg, "value");
+
+		status = h_insert(key, value);
+
+		json_object_set_new(response, "status", json_pack("i", status));
 		break;
 
-	case 2:
+	case 2: /* Find */
+		key = json_string_get(msg, "key");
+
+		status = h_find(key, &value);
+		json_object_set_new(response, "status", json_pack("i", status));
+		if (status)
+			json_object_set(response, "value", value);
 		break;
 
-	case 3:
+	case 3: /* Delete */
+		key = json_string_get(msg, "key");
+
+		status = h_delete(key, &value);
+		json_object_set_new(response, "status", json_pack("i", status));
+		if (status)
+			json_object_set_new(response, "value", value);
+		break;
+
+	case 4: /* Dump */
+		value = h_dump();
+
+		if (!value)
+			json_object_set_new(response, "status",
+					    json_pack("i", 0));
+		else {
+			json_object_set_new(response, "status",
+					    json_pack("i", 1));
+			json_object_set_new(response, "value", value);
+		}
+
 		break;
 
 	default:
 		WARN("Invalid msg type %d, dropping connection", type);
+		json_decref(msg);
+		json_decref(response);
 		return -1;
 	}
+
+	text = json_dumps(response, JSON_COMPACT);
+	send_string(ps, ps->fd, text, strlen(text) + 1);
+
+	free(text);
+	json_decref(msg);
+	json_decref(response);
 
 	return 0;
 }

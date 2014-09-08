@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "utils.h"
 #include "parser.h"
@@ -167,6 +169,7 @@ void recv_string(client_state_t *state, unsigned long size, unsigned long timeou
 	ASSERT(state);
 
 	if (timeout) {
+		old_tv_len = sizeof(old_tv);
 		if (getsockopt(state->sockfd, SOL_SOCKET, SO_RCVTIMEO,
 			       &old_tv, &old_tv_len) < 0)
 			ERR(EXIT_FAILURE, "getsockopt: (errno %d) %s", errno,
@@ -221,7 +224,7 @@ void recv_string(client_state_t *state, unsigned long size, unsigned long timeou
 
 	if (timeout) {
 		if (setsockopt(state->sockfd, SOL_SOCKET, SO_RCVTIMEO, &old_tv,
-			       old_tv_len) < 0)
+			       sizeof(old_tv)) < 0)
 			ERR(EXIT_FAILURE, "setsockopt: (errno %d) %s", errno,
 			    strerror(errno));
 	}
@@ -229,6 +232,8 @@ void recv_string(client_state_t *state, unsigned long size, unsigned long timeou
 
 void execute_command(client_state_t *state, command_t *cmd)
 {
+	unsigned long rnd;
+
 	ASSERT(state && cmd);
 
 	switch (cmd->command_type) {
@@ -246,6 +251,11 @@ void execute_command(client_state_t *state, command_t *cmd)
 
 	case CT_USLEEP:
 		usleep(*(unsigned long *)cmd->arg0);
+		break;
+
+	case CT_USLEEP_RND:
+		rnd = random() % *(unsigned long *)cmd->arg0;
+		usleep(rnd);
 		break;
 
 	case CT_SEND_RND:

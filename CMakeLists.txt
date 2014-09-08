@@ -1,13 +1,15 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(licenta)
 
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/include)
-
 # Load custom modules
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 # Find required libraries
 FIND_PACKAGE(Jansson REQUIRED)
+
+INCLUDE_DIRECTORIES(
+    ${JANSSON_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/include)
 
 SET(server_SRCS
     server/main.c

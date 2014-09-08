@@ -81,6 +81,24 @@ command_t *parse_line(char *line, unsigned line_number)
 			ERR(EXIT_FAILURE,
 			    "PARSING ERROR line %u, wrong argument type for SLEEP, needs an unsigned long",
 			    line_number);
+	} else if (!strcasecmp(word, "USLEEP_RND")) {
+		cmd->command_type = CT_USLEEP_RND;
+
+		/* We need an argument */
+		cmd_arg0 = strtok_r(NULL, DELIMS, &saveptr);
+		if (!cmd_arg0)
+			ERR(EXIT_FAILURE,
+			    "PARSING ERROR line %u, SLEEP needs an argument",
+			    line_number);
+
+		cmd->arg0 = malloc(sizeof(unsigned long));
+		if (!cmd->arg0)
+			ERR(EXIT_FAILURE, "ASSERT: malloc");
+
+		if (!sscanf(cmd_arg0, "%lu", (long unsigned *)cmd->arg0))
+			ERR(EXIT_FAILURE,
+			    "PARSING ERROR line %u, wrong argument type for SLEEP, needs an unsigned long",
+			    line_number);
 	} else if (!strcasecmp(word, "SEND")) {
 		cmd->command_type = CT_SEND;
 

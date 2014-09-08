@@ -3,6 +3,11 @@
 
 #include <time.h>
 #include <stdint.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 
 #define EV_IN		0x01
 #define EV_OUT		0x02

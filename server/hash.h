@@ -13,9 +13,9 @@ void h_init_hash(void);
  */
 void h_destroy_hash(void);
 
-int h_insert(char *key, json_t *val);
-int h_delete(char *key, json_t **val);
-int h_find(char *key, json_t **val);
+int h_insert(const char *key, json_t *val);
+int h_delete(const char *key, json_t **val);
+int h_find(const char *key, json_t **val);
 json_t *h_dump(void);
 
 #endif /* HASH_H_ */
