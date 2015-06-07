@@ -9,12 +9,8 @@
 #include <string.h>
 #include <jansson.h>
 
-#if defined(CLIENT)
 #define LOGG(fmt, ...)		\
 	mlog(__FILENAME__, __func__, __LINE__, fmt "\n", ##__VA_ARGS__)
-#else
-#define LOGG(...)
-#endif
 #define LOG(fmt, ...)	LOGG("[INFO] " fmt, ##__VA_ARGS__)
 #define WARN(fmt, ...)	LOGG("[WARN] " fmt, ##__VA_ARGS__)
 #define WARN_SYS(fmt, ...)	\

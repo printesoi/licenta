@@ -1,2 +1,3 @@
 -Iinclude
 -Wno-unknown-pragmas
+-DCLIENT

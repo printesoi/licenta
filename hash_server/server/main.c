@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 			s_port = port;
 	}
 
-	setup_environment();
+	/*setup_environment();*/
 	h_init_hash();
 
 	if (atexit(server_cleanup))
